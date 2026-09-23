@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบจองแม่บ้านและช่างออนไลน์</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --navy:#183B4E; --teal:#2E8B8B; --gold:#DDA448; --bg:#F6F5F1; --ink:#20303A; --line:#E1E1DA;
+  --danger:#B3452B; --ok:#2F7A4F; --warn:#B98A1D;
+}
+*{box-sizing:border-box;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);}
+h1,h2,h3,h4,.brandfont{font-family:'Kanit',sans-serif;}
+.req{color:var(--danger);}
+header.topbar{background:var(--navy);color:#fff;padding:14px 0;}
+header.topbar img{height:42px;border-radius:6px;background:#fff;padding:2px;}
+header.topbar .subtitle{color:#C9D6DC;font-size:.85rem;}
+.nav-pills .nav-link{color:var(--navy);font-weight:600;border-radius:8px;padding:.55rem 1rem;}
+.nav-pills .nav-link.active{background:var(--teal);color:#fff;}
+.section-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px;margin-bottom:20px;}
+.brand-hero{background:linear-gradient(135deg,var(--navy),#215064);color:#fff;border-radius:14px;padding:30px;margin-bottom:22px;}
+.brand-hero h1{font-size:1.7rem;margin-bottom:6px;}
+.brand-hero p{color:#CFE0E6;margin:0;}
+label.form-label{font-weight:600;font-size:.92rem;}
+.btn-teal{background:var(--teal);border-color:var(--teal);color:#fff;}
+.btn-teal:hover{background:#256f6f;border-color:#256f6f;color:#fff;}
+.btn-navy{background:var(--navy);border-color:var(--navy);color:#fff;}
+.btn-navy:hover{background:#0f2733;border-color:#0f2733;color:#fff;}
+.badge-status{font-size:.8rem;padding:.4em .7em;border-radius:20px;}
+.status-รออนุมัติ{background:#FBEEDC;color:var(--warn);}
+.status-อนุมัติ{background:#E1F0E5;color:var(--ok);}
+.status-ไม่อนุมัติ{background:#F6E1DC;color:var(--danger);}
+.status-เสร็จสิ้น{background:#DEE8EE;color:var(--navy);}
+.table thead{background:#F0EEE7;}
+.stat-box{border:1px solid var(--line);border-radius:10px;padding:16px;background:#fff;}
+.stat-box .num{font-size:1.7rem;font-weight:700;font-family:'Kanit',sans-serif;color:var(--navy);}
+footer{color:#8a8a80;font-size:.85rem;padding:24px 0;text-align:center;}
+.setup-banner{background:#FBEEDC;border:1px solid var(--gold);border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:.92rem;}
+#adminGate{max-width:420px;margin:60px auto;}
+.hidden{display:none !important;}
+.small-muted{color:#7a7a70;font-size:.85rem;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+      <img id="logoImg" src="logo.png" alt="โลโก้" onerror="this.classList.add('hidden')">
+      <div>
+        <div class="brandfont" style="font-size:1.25rem;font-weight:700;">ระบบจองแม่บ้านและช่างออนไลน์</div>
+        <div class="subtitle">Home Service Booking System</div>
+      </div>
+    </div>
+    <label class="btn btn-sm btn-outline-light mb-0">
+      <i class="fa-solid fa-image"></i> อัปโหลดโลโก้
+      <input type="file" id="logoUpload" accept="image/*" class="hidden">
+    </label>
+  </div>
+</header>
+
+<div class="container py-4">
+
+  <div id="setupBanner" class="setup-banner hidden">
+    <i class="fa-solid fa-gear"></i> ยังไม่ได้ตั้งค่า URL ของ Google Apps Script —
+    <a href="#" onclick="promptApiUrl();return false;">กดที่นี่เพื่อใส่ URL</a> (ดูวิธีได้ใน README.md)
+  </div>
+
+  <ul class="nav nav-pills mb-4 flex-wrap gap-2" id="mainTabs">
+    <li class="nav-item"><a class="nav-link active" data-tab="tab-booking" href="#">จองบริการ</a></li>
+    <li class="nav-item"><a class="nav-link" data-tab="tab-apply" href="#">สมัครแม่บ้าน/ช่าง</a></li>
+    <li class="nav-item"><a class="nav-link" data-tab="tab-status" href="#">ตรวจสอบสถานะ</a></li>
+    <li class="nav-item"><a class="nav-link" data-tab="tab-approve" href="#">อนุมัติ (หัวหน้า)</a></li>
+    <li class="nav-item"><a class="nav-link" data-tab="tab-admin" href="#">แอดมิน</a></li>
+  </ul>
+
+  <!-- ===================== BOOKING TAB ===================== -->
+  <section id="tab-booking" class="tab-pane">
+    <div class="brand-hero">
+      <h1>จองแม่บ้าน / ช่างซ่อม</h1>
+      <p>กรอกแบบฟอร์ม ระบบจะออกหมายเลขการจองให้อัตโนมัติ และส่งอีเมลแจ้งผู้เกี่ยวข้องทันที</p>
+    </div>
+    <div class="section-card">
+      <form id="bookingForm" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">ประเภทบริการ <span class="req">*</span></label>
+          <select class="form-select" name="serviceType" required>
+            <option value="">เลือกประเภทบริการ</option>
+            <option>แม่บ้านทำความสะอาด</option>
+            <option>ช่างไฟฟ้า</option>
+            <option>ช่างประปา</option>
+            <option>ช่างแอร์</option>
+            <option>ช่างทั่วไป</option>
+            <option>อื่นๆ</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">วันที่เริ่มงาน <span class="req">*</span></label>
+          <input type="date" class="form-control" name="startDate" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">วันที่สิ้นสุดงาน <span class="req">*</span></label>
+          <input type="date" class="form-control" name="endDate" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">ชื่อ <span class="req">*</span></label>
+          <input class="form-control" name="firstName" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">นามสกุล <span class="req">*</span></label>
+          <input class="form-control" name="lastName" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">ตำแหน่ง</label>
+          <input class="form-control" name="position">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">สาขา <span class="req">*</span></label>
+          <input class="form-control" name="branch" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">จังหวัด <span class="req">*</span></label>
+          <input list="provinceList" class="form-control addr-province" name="province" required autocomplete="off">
+          <datalist id="provinceList"></datalist>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">อำเภอ/เขต <span class="req">*</span></label>
+          <input list="bkAmphoeList" class="form-control addr-amphoe" name="amphoe" required autocomplete="off">
+          <datalist id="bkAmphoeList"></datalist>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">ตำบล/แขวง <span class="req">*</span></label>
+          <input list="bkTambonList" class="form-control addr-tambon" name="tambon" required autocomplete="off">
+          <datalist id="bkTambonList"></datalist>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">เบอร์โทรศัพท์ <span class="req">*</span></label>
+          <input class="form-control" name="phone" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">ไอดีไลน์</label>
+          <input class="form-control" name="lineId">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">อีเมลผู้ติดต่อ <span class="req">*</span></label>
+          <input type="email" class="form-control" name="contactEmail" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">อีเมลหัวหน้าผู้มีสิทธิ์อนุมัติ <span class="req">*</span></label>
+          <input type="email" class="form-control" name="approverEmail" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">รายละเอียดเพิ่มเติม</label>
+          <input class="form-control" name="details">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-teal px-4" type="submit"><i class="fa-solid fa-paper-plane"></i> ส่งคำขอจอง</button>
+        </div>
+      </form>
+      <div id="bookingResult" class="alert alert-success mt-3 hidden"></div>
+    </div>
+  </section>
+
+  <!-- ===================== APPLICATION TAB ===================== -->
+  <section id="tab-apply" class="tab-pane hidden">
+    <div class="brand-hero">
+      <h1>สมัครเป็นแม่บ้าน / ช่าง</h1>
+      <p>สมัครได้ทั้งแบบบุคคลธรรมดาและนิติบุคคล แนบรูปประกอบได้สูงสุด 5 ไฟล์</p>
+    </div>
+    <div class="section-card">
+      <form id="applyForm" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">ประเภทผู้สมัคร <span class="req">*</span></label>
+          <select class="form-select" name="applicantType" required>
+            <option value="">เลือกประเภท</option>
+            <option>บุคคลธรรมดา</option>
+            <option>นิติบุคคล</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">ประเภทงานที่สมัคร <span class="req">*</span></label>
+          <select class="form-select" name="jobType" required>
+            <option value="">เลือกประเภทงาน</option>
+            <option>แม่บ้าน</option>
+            <option>ช่างไฟฟ้า</option>
+            <option>ช่างประปา</option>
+            <option>ช่างแอร์</option>
+            <option>ช่างทั่วไป</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">วันที่พร้อมเริ่มงาน <span class="req">*</span></label>
+          <input type="date" class="form-control" name="readyDate" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">ชื่อ <span class="req">*</span></label>
+          <input class="form-control" name="firstName" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">นามสกุล <span class="req">*</span></label>
+          <input class="form-control" name="lastName" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">สาขาที่จะลงงาน</label>
+          <input class="form-control" name="branch">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">เบอร์โทรศัพท์ <span class="req">*</span></label>
+          <input class="form-control" name="phone" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">จังหวัด <span class="req">*</span></label>
+          <input list="provinceList" class="form-control addr-province" name="province" required autocomplete="off">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">อำเภอ/เขต <span class="req">*</span></label>
+          <input list="apAmphoeList" class="form-control addr-amphoe" name="amphoe" required autocomplete="off">
+          <datalist id="apAmphoeList"></datalist>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">ตำบล/แขวง <span class="req">*</span></label>
+          <input list="apTambonList" class="form-control addr-tambon" name="tambon" required autocomplete="off">
+          <datalist id="apTambonList"></datalist>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">ไอดีไลน์</label>
+          <input class="form-control" name="lineId">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">เลขบัตรประชาชน / เลขนิติบุคคล <span class="req">*</span></label>
+          <input class="form-control" name="idCard" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">แนบไฟล์รูป (สูงสุด 5 ไฟล์)</label>
+          <input type="file" class="form-control" name="files" accept="image/*" multiple>
+        </div>
+        <div class="col-12">
+          <label class="form-label">รายละเอียดเพิ่มเติม</label>
+          <textarea class="form-control" name="details" rows="2"></textarea>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-teal px-4" type="submit"><i class="fa-solid fa-paper-plane"></i> ส่งใบสมัคร</button>
+        </div>
+      </form>
+      <div id="applyResult" class="alert alert-success mt-3 hidden"></div>
+    </div>
+  </section>
+
+  <!-- ===================== STATUS TAB ===================== -->
+  <section id="tab-status" class="tab-pane hidden">
+    <div class="section-card">
+      <h3 class="mb-3">ตรวจสอบสถานะการจอง</h3>
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-4">
+          <label class="form-label">หมายเลขการจอง</label>
+          <input class="form-control" id="statusSearchId" placeholder="เช่น 20260923-001">
+        </div>
+        <div class="col-md-2"><button class="btn btn-navy w-100" onclick="searchByBookingId()">ค้นหา</button></div>
+        <div class="col-md-6"><div class="small-muted">หรือค้นหาจากพื้นที่ด้านล่าง</div></div>
+        <div class="col-md-3">
+          <label class="form-label">จังหวัด</label>
+          <input list="provinceList" class="form-control" id="statusProvince" autocomplete="off">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">อำเภอ/เขต</label>
+          <input list="stAmphoeList" class="form-control" id="statusAmphoe" autocomplete="off">
+          <datalist id="stAmphoeList"></datalist>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">ตำบล/แขวง</label>
+          <input list="stTambonList" class="form-control" id="statusTambon" autocomplete="off">
+          <datalist id="stTambonList"></datalist>
+        </div>
+        <div class="col-md-3 d-flex align-items-end"><button class="btn btn-outline-secondary w-100" onclick="searchByArea()">ค้นหาตามพื้นที่</button></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>เลขจอง</th><th>บริการ</th><th>ผู้จอง</th><th>พื้นที่</th><th>วันที่</th><th>สถานะ</th></tr></thead>
+          <tbody id="statusResults"><tr><td colspan="6" class="text-center small-muted py-4">ยังไม่มีผลการค้นหา</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== APPROVAL TAB ===================== -->
+  <section id="tab-approve" class="tab-pane hidden">
+    <div class="section-card" style="max-width:600px;">
+      <h3 class="mb-2">อนุมัติคำขอจอง (สำหรับหัวหน้า)</h3>
+      <p class="small-muted">ปกติระบบจะส่งลิงก์อนุมัติ/ไม่อนุมัติไปยังอีเมลของท่านโดยตรงเมื่อมีคำขอจองใหม่ หรือกรอกแบบฟอร์มด้านล่างเพื่อดำเนินการด้วยตนเอง</p>
+      <form id="approveForm" class="row g-3 mt-1">
+        <div class="col-12">
+          <label class="form-label">หมายเลขการจอง <span class="req">*</span></label>
+          <input class="form-control" name="bookingId" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">อีเมลผู้อนุมัติ <span class="req">*</span></label>
+          <input type="email" class="form-control" name="approverEmail" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">ผลการพิจารณา <span class="req">*</span></label>
+          <select class="form-select" name="decision" required>
+            <option value="">เลือก</option>
+            <option value="approve">อนุมัติ</option>
+            <option value="reject">ไม่อนุมัติ</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">หมายเหตุ</label>
+          <textarea class="form-control" name="note" rows="2"></textarea>
+        </div>
+        <div class="col-12"><button class="btn btn-teal px-4" type="submit">บันทึกผลการอนุมัติ</button></div>
+      </form>
+      <div id="approveResult" class="alert alert-success mt-3 hidden"></div>
+    </div>
+  </section>
+
+  <!-- ===================== ADMIN TAB ===================== -->
+  <section id="tab-admin" class="tab-pane hidden">
+
+    <div id="adminGate">
+      <div class="section-card text-center">
+        <h4><i class="fa-solid fa-lock"></i> เข้าสู่ระบบแอดมิน</h4>
+        <p class="small-muted mb-3">ใส่รหัสผ่านแอดมิน (ค่าเริ่มต้น 123456)</p>
+        <input type="password" id="adminPassInput" class="form-control mb-2" placeholder="รหัสผ่าน">
+        <button class="btn btn-navy w-100" onclick="doAdminLogin()">เข้าสู่ระบบ</button>
+        <div id="adminLoginMsg" class="text-danger mt-2 small"></div>
+        <hr>
+        <button class="btn btn-link btn-sm" onclick="skipLoginToggle()">ปิด/เปิดการบังคับใส่รหัส (ตั้งค่าขั้นสูง)</button>
+      </div>
+    </div>
+
+    <div id="adminPanel" class="hidden">
+      <ul class="nav nav-tabs mb-3">
+        <li class="nav-item"><a class="nav-link active" data-atab="a-dashboard" href="#">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" data-atab="a-bookings" href="#">รายงานการจอง</a></li>
+        <li class="nav-item"><a class="nav-link" data-atab="a-finance" href="#">การเงิน</a></li>
+        <li class="nav-item"><a class="nav-link" data-atab="a-settings" href="#">ตั้งค่า</a></li>
+      </ul>
+
+      <!-- DASHBOARD -->
+      <div id="a-dashboard" class="atab">
+        <div class="section-card">
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-md-3"><label class="form-label">ตั้งแต่วันที่</label><input type="date" id="dashStart" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label">ถึงวันที่</label><input type="date" id="dashEnd" class="form-control"></div>
+            <div class="col-md-3"><button class="btn btn-navy" onclick="loadDashboard()">กรองข้อมูล</button></div>
+            <div class="col-md-3 text-md-end"><button class="btn btn-outline-secondary" onclick="exportCsv()"><i class="fa-solid fa-file-export"></i> ส่งออกไฟล์ (CSV)</button></div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="stat-box"><div class="small-muted">รายการทั้งหมด</div><div class="num" id="statTotal">0</div></div></div>
+            <div class="col-md-3"><div class="stat-box"><div class="small-muted">รออนุมัติ</div><div class="num" id="statPending">0</div></div></div>
+            <div class="col-md-3"><div class="stat-box"><div class="small-muted">อนุมัติแล้ว</div><div class="num" id="statApproved">0</div></div></div>
+            <div class="col-md-3"><div class="stat-box"><div class="small-muted">ไม่อนุมัติ</div><div class="num" id="statRejected">0</div></div></div>
+          </div>
+          <canvas id="serviceChart" height="90"></canvas>
+        </div>
+      </div>
+
+      <!-- BOOKINGS REPORT -->
+      <div id="a-bookings" class="atab hidden">
+        <div class="section-card">
+          <h5 class="mb-3">รายงานการจอง — แก้ไขผู้รับผิดชอบและสถานะ</h5>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>เลขจอง</th><th>บริการ</th><th>ผู้จอง</th><th>สถานะ</th><th>แม่บ้าน/ช่าง</th><th>สถานะติดต่อ</th><th>ชำระเงิน</th><th></th></tr></thead>
+              <tbody id="bookingsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINANCE -->
+      <div id="a-finance" class="atab hidden">
+        <div class="section-card">
+          <h5>ตั้งค่าค่าใช้จ่าย</h5>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">ค่าแรงต่อวัน (บาท)</label><input type="number" id="cfgDailyWage" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label">คิดเพิ่ม (%)</label><input type="number" id="cfgMarkupPercent" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label">คิดเพิ่ม (บาท)</label><input type="number" id="cfgMarkupBaht" class="form-control"></div>
+          </div>
+          <button class="btn btn-teal mt-3" onclick="saveFinanceSettings()">บันทึกการตั้งค่า</button>
+        </div>
+
+        <div class="section-card">
+          <h5>ใบแจ้งหนี้</h5>
+          <form id="invoiceForm" class="row g-2 align-items-end mb-3">
+            <div class="col-md-2"><label class="form-label">เลขจอง</label><input class="form-control" name="bookingId"></div>
+            <div class="col-md-3"><label class="form-label">ชื่อลูกหนี้</label><input class="form-control" name="debtorName" required></div>
+            <div class="col-md-2"><label class="form-label">จำนวนเงิน</label><input type="number" class="form-control" name="amount" required></div>
+            <div class="col-md-2"><label class="form-label">ครบกำหนด</label><input type="date" class="form-control" name="dueDate"></div>
+            <div class="col-md-3"><button class="btn btn-navy w-100" type="submit">สร้างใบแจ้งหนี้</button></div>
+          </form>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead><tr><th>เลขที่</th><th>เลขจอง</th><th>ลูกหนี้</th><th>จำนวนเงิน</th><th>ครบกำหนด</th><th>สถานะ</th><th></th></tr></thead>
+              <tbody id="invoiceTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h5>ลูกหนี้</h5>
+          <form id="debtorForm" class="row g-2 align-items-end mb-3">
+            <div class="col-md-3"><label class="form-label">ชื่อ</label><input class="form-control" name="name" required></div>
+            <div class="col-md-3"><label class="form-label">ช่องทางติดต่อ</label><input class="form-control" name="contact"></div>
+            <div class="col-md-2"><label class="form-label">ยอดหนี้รวม</label><input type="number" class="form-control" name="totalDebt"></div>
+            <div class="col-md-2"><label class="form-label">สถานะ</label>
+              <select class="form-select" name="status"><option>ค้างชำระ</option><option>ชำระแล้ว</option></select>
+            </div>
+            <div class="col-md-2"><button class="btn btn-navy w-100" type="submit">เพิ่มลูกหนี้</button></div>
+          </form>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead><tr><th>ชื่อ</th><th>ติดต่อ</th><th>ยอดหนี้</th><th>สถานะ</th></tr></thead>
+              <tbody id="debtorTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="a-settings" class="atab hidden">
+        <div class="section-card" style="max-width:520px;">
+          <h5>เปลี่ยนรหัสผ่านแอดมิน</h5>
+          <div class="mb-2"><input type="password" id="oldPass" class="form-control" placeholder="รหัสผ่านเดิม"></div>
+          <div class="mb-2"><input type="password" id="newPass" class="form-control" placeholder="รหัสผ่านใหม่"></div>
+          <button class="btn btn-navy" onclick="changePassword()">บันทึกรหัสผ่านใหม่</button>
+          <div id="changePassMsg" class="small mt-2"></div>
+        </div>
+        <div class="section-card" style="max-width:520px;">
+          <h5>อีเมลแอดมิน (รับสำเนาแจ้งเตือนทุกคำขอ)</h5>
+          <input id="cfgAdminEmail" class="form-control mb-2" placeholder="admin@example.com">
+          <button class="btn btn-navy" onclick="saveAdminEmail()">บันทึก</button>
+        </div>
+        <div class="section-card" style="max-width:520px;">
+          <h5>ขอสิทธิ์แอดมินเพิ่ม</h5>
+          <input id="reqName" class="form-control mb-2" placeholder="ชื่อผู้ขอสิทธิ์">
+          <input id="reqEmail" class="form-control mb-2" placeholder="อีเมลผู้ขอสิทธิ์">
+          <input id="reqReason" class="form-control mb-2" placeholder="เหตุผล">
+          <button class="btn btn-outline-secondary" onclick="requestAdminAccess()">ส่งคำขอสิทธิ์ทางอีเมล</button>
+        </div>
+        <div class="section-card" style="max-width:520px;">
+          <h5>API URL (Google Apps Script)</h5>
+          <p class="small-muted">ค่านี้จำเป็นเพื่อให้เว็บติดต่อกับ Google Sheets ได้ — ดูวิธีดึง URL ใน README.md</p>
+          <button class="btn btn-outline-secondary" onclick="promptApiUrl()">ตั้งค่า API URL</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>ระบบจองแม่บ้านและช่างออนไลน์ — ข้อมูลทั้งหมดบันทึกลง Google Sheets ของคุณเอง</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+/* ============== CONFIG ============== */
+let API_URL = localStorage.getItem('mb_api_url') || '';
+function promptApiUrl(){
+  const v = prompt('วาง URL ของ Google Apps Script Web App (ลงท้ายด้วย /exec):', API_URL || '');
+  if (v){ API_URL = v.trim(); localStorage.setItem('mb_api_url', API_URL); document.getElementById('setupBanner').classList.add('hidden'); }
+}
+if (!API_URL) document.addEventListener('DOMContentLoaded', () => document.getElementById('setupBanner').classList.remove('hidden'));
+
+async function api(action, payload){
+  if (!API_URL){ promptApiUrl(); if(!API_URL) throw new Error('ยังไม่ได้ตั้งค่า API URL'); }
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
+    body: JSON.stringify(Object.assign({ action }, payload || {}))
+  });
+  return res.json();
+}
+
+/* ============== TABS ============== */
+document.querySelectorAll('#mainTabs [data-tab]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('#mainTabs .nav-link').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+    document.getElementById(a.dataset.tab).classList.remove('hidden');
+    if (a.dataset.tab === 'tab-admin' && sessionStorage.getItem('mb_admin_ok') === '1') showAdminPanel();
+  });
+});
+document.querySelectorAll('.nav-tabs [data-atab]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.nav-tabs .nav-link').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    document.querySelectorAll('.atab').forEach(p => p.classList.add('hidden'));
+    document.getElementById(a.dataset.atab).classList.remove('hidden');
+    if (a.dataset.atab === 'a-dashboard') loadDashboard();
+    if (a.dataset.atab === 'a-bookings') loadDashboard();
+    if (a.dataset.atab === 'a-finance') { loadFinance(); }
+  });
+});
+
+/* ============== LOGO ============== */
+document.getElementById('logoUpload').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = () => { localStorage.setItem('mb_logo', reader.result); applyLogo(); };
+  reader.readAsDataURL(f);
+});
+function applyLogo(){
+  const l = localStorage.getItem('mb_logo');
+  if (l){ const img = document.getElementById('logoImg'); img.src = l; img.classList.remove('hidden'); }
+}
+applyLogo();
+
+/* ============== THAI ADDRESS DATA ============== */
+let ADDR = []; // [{name_th, amphure:[{name_th, tambon:[{name_th}]}]}]
+async function loadAddressData(){
+  try{
+    const res = await fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json');
+    ADDR = await res.json();
+  }catch(e){ console.warn('โหลดข้อมูลจังหวัด/อำเภอ/ตำบลไม่สำเร็จ', e); ADDR = []; }
+  const dl = document.getElementById('provinceList');
+  ADDR.forEach(p => { const o = document.createElement('option'); o.value = p.name_th; dl.appendChild(o); });
+  wireAddressCascade();
+}
+function findProvince(name){ return ADDR.find(p => p.name_th === name); }
+function findAmphoe(province, name){ const p = findProvince(province); return p ? p.amphure.find(a => a.name_th === name) : null; }
+
+function wireAddressCascade(){
+  document.querySelectorAll('.addr-province').forEach(provInput => {
+    const form = provInput.closest('form') || provInput.closest('.section-card');
+    const amphInput = form.querySelector('.addr-amphoe');
+    const tambInput = form.querySelector('.addr-tambon');
+    const amphList = amphInput ? document.getElementById(amphInput.getAttribute('list')) : null;
+    const tambList = tambInput ? document.getElementById(tambInput.getAttribute('list')) : null;
+    provInput.addEventListener('input', () => {
+      if (!amphList) return;
+      amphList.innerHTML = ''; if(tambList) tambList.innerHTML='';
+      const p = findProvince(provInput.value);
+      if (p) p.amphure.forEach(a => { const o = document.createElement('option'); o.value = a.name_th; amphList.appendChild(o); });
+    });
+    if (amphInput) amphInput.addEventListener('input', () => {
+      if (!tambList) return;
+      tambList.innerHTML = '';
+      const a = findAmphoe(provInput.value, amphInput.value);
+      if (a) a.tambon.forEach(t => { const o = document.createElement('option'); o.value = t.name_th; tambList.appendChild(o); });
+    });
+  });
+}
+loadAddressData();
+
+/* ============== BOOKING FORM ============== */
+document.getElementById('bookingForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const body = Object.fromEntries(fd.entries());
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+  try{
+    const r = await api('createBooking', body);
+    const box = document.getElementById('bookingResult'); box.classList.remove('hidden');
+    if (r.ok){ box.className='alert alert-success mt-3'; box.innerHTML = 'ส่งคำขอจองสำเร็จ! หมายเลขการจองของคุณคือ <strong>'+r.bookingId+'</strong> (ระบบส่งอีเมลแจ้งเตือนแล้ว)'; e.target.reset(); }
+    else { box.className='alert alert-danger mt-3'; box.textContent = 'เกิดข้อผิดพลาด: ' + r.error; }
+  } catch(err){ alert('เกิดข้อผิดพลาด: '+err.message); }
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> ส่งคำขอจอง';
+});
+
+/* ============== APPLICATION FORM ============== */
+document.getElementById('applyForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const body = Object.fromEntries(fd.entries());
+  delete body.files;
+  const fileInput = e.target.querySelector('input[name=files]');
+  const files = Array.from(fileInput.files || []).slice(0,5);
+  body.files = await Promise.all(files.map(f => new Promise((res,rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res({ name: f.name, mimeType: f.type, data: reader.result.split(',')[1] });
+    reader.onerror = rej;
+    reader.readAsDataURL(f);
+  })));
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+  try{
+    const r = await api('createApplication', body);
+    const box = document.getElementById('applyResult'); box.classList.remove('hidden');
+    if (r.ok){ box.className='alert alert-success mt-3'; box.innerHTML = 'ส่งใบสมัครสำเร็จ! รหัสใบสมัคร <strong>'+r.applicationId+'</strong>'; e.target.reset(); }
+    else { box.className='alert alert-danger mt-3'; box.textContent = 'เกิดข้อผิดพลาด: ' + r.error; }
+  } catch(err){ alert('เกิดข้อผิดพลาด: '+err.message); }
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> ส่งใบสมัคร';
+});
+
+/* ============== STATUS SEARCH ============== */
+function statusBadge(s){ return '<span class="badge-status status-'+s+'">'+s+'</span>'; }
+function renderStatusRows(list){
+  const tbody = document.getElementById('statusResults');
+  if (!list.length){ tbody.innerHTML = '<tr><td colspan="6" class="text-center small-muted py-4">ไม่พบข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = list.map(b => `<tr>
+    <td>${b.BookingID}</td><td>${b.ServiceType}</td><td>${b.FirstName} ${b.LastName}</td>
+    <td>${b.Tambon||''} ${b.Amphoe||''} ${b.Province||''}</td>
+    <td>${fmtDate(b.StartDate)} - ${fmtDate(b.EndDate)}</td><td>${statusBadge(b.Status)}</td></tr>`).join('');
+}
+function fmtDate(d){ if(!d) return ''; const dt = new Date(d); return isNaN(dt) ? d : dt.toLocaleDateString('th-TH'); }
+async function searchByBookingId(){
+  const id = document.getElementById('statusSearchId').value.trim();
+  if (!id) return;
+  const r = await api('getBookingStatus', { bookingId: id });
+  renderStatusRows(r.ok ? [r.booking] : []);
+}
+async function searchByArea(){
+  const r = await api('searchBookings', {
+    province: document.getElementById('statusProvince').value,
+    amphoe: document.getElementById('statusAmphoe').value,
+    tambon: document.getElementById('statusTambon').value
+  });
+  renderStatusRows(r.ok ? r.bookings : []);
+}
+
+/* ============== APPROVAL FORM ============== */
+document.getElementById('approveForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const body = Object.fromEntries(fd.entries());
+  const r = await api('decideBooking', body);
+  const box = document.getElementById('approveResult'); box.classList.remove('hidden');
+  if (r.ok){ box.className='alert alert-success mt-3'; box.textContent='บันทึกผลการพิจารณาเรียบร้อยแล้ว'; e.target.reset(); }
+  else { box.className='alert alert-danger mt-3'; box.textContent='เกิดข้อผิดพลาด: '+r.error; }
+});
+
+/* ============== ADMIN LOGIN ============== */
+async function doAdminLogin(){
+  const pass = document.getElementById('adminPassInput').value;
+  const r = await api('adminLogin', { password: pass });
+  if (r.ok){ sessionStorage.setItem('mb_admin_ok','1'); showAdminPanel(); }
+  else document.getElementById('adminLoginMsg').textContent = r.error || 'เข้าสู่ระบบไม่สำเร็จ';
+}
+function showAdminPanel(){
+  document.getElementById('adminGate').classList.add('hidden');
+  document.getElementById('adminPanel').classList.remove('hidden');
+  loadDashboard(); loadSettingsIntoForm();
+}
+function skipLoginToggle(){
+  api('updateSettings', {}).catch(()=>{});
+  alert('ไปที่แท็บตั้งค่า > (ต้องเข้าสู่ระบบก่อน) เพื่อเปิด/ปิดการบังคับใส่รหัสผ่านแอดมิน');
+}
+
+/* ============== DASHBOARD ============== */
+let serviceChart;
+async function loadDashboard(){
+  const r = await api('getDashboard', { startDate: document.getElementById('dashStart').value, endDate: document.getElementById('dashEnd').value });
+  if (!r.ok) return;
+  document.getElementById('statTotal').textContent = r.total;
+  document.getElementById('statPending').textContent = r.byStatus['รออนุมัติ'] || 0;
+  document.getElementById('statApproved').textContent = r.byStatus['อนุมัติ'] || 0;
+  document.getElementById('statRejected').textContent = r.byStatus['ไม่อนุมัติ'] || 0;
+
+  const ctx = document.getElementById('serviceChart');
+  const labels = Object.keys(r.byService), data = Object.values(r.byService);
+  if (serviceChart) serviceChart.destroy();
+  serviceChart = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ label:'จำนวนการจองตามประเภทบริการ', data, backgroundColor:'#2E8B8B' }] },
+    options:{ plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } } });
+
+  window.currentBookings = r.bookings || [];
+  renderBookingsTable(window.currentBookings);
+}
+function renderBookingsTable(list){
+  document.getElementById('bookingsTableBody').innerHTML = list.map(b => `<tr>
+    <td>${b.BookingID}</td><td>${b.ServiceType}</td><td>${b.FirstName} ${b.LastName}</td>
+    <td>${statusBadge(b.Status)}</td>
+    <td><input class="form-control form-control-sm" value="${b.AssignedStaff||''}" onchange="updateBookingField('${b.BookingID}','assignedStaff',this.value)"></td>
+    <td><select class="form-select form-select-sm" onchange="updateBookingField('${b.BookingID}','contactStatus',this.value)">
+      ${['ยังไม่ติดต่อ','ติดต่อแล้ว','นัดหมายแล้ว'].map(s=>`<option ${b.ContactStatus===s?'selected':''}>${s}</option>`).join('')}</select></td>
+    <td><select class="form-select form-select-sm" onchange="updateBookingField('${b.BookingID}','paymentStatus',this.value)">
+      ${['ยังไม่ชำระ','ชำระบางส่วน','ชำระแล้ว'].map(s=>`<option ${b.PaymentStatus===s?'selected':''}>${s}</option>`).join('')}</select></td>
+    <td><select class="form-select form-select-sm" onchange="updateBookingField('${b.BookingID}','status',this.value)">
+      ${['รออนุมัติ','อนุมัติ','ไม่อนุมัติ','เสร็จสิ้น'].map(s=>`<option ${b.Status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+    </tr>`).join('');
+}
+async function updateBookingField(id, field, value){
+  await api('updateBooking', { bookingId: id, [field]: value });
+}
+function exportCsv(){
+  const rows = window.currentBookings || [];
+  if (!rows.length) return alert('ไม่มีข้อมูลให้ส่งออก');
+  const headers = Object.keys(rows[0]).filter(h => h !== '_row');
+  const csv = [headers.join(',')].concat(rows.map(r => headers.map(h => '"'+String(r[h]||'').replace(/"/g,'""')+'"').join(','))).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bookings_export.csv'; a.click();
+}
+
+/* ============== FINANCE ============== */
+async function loadFinance(){
+  const s = await api('getSettings', {});
+  if (s.ok){
+    document.getElementById('cfgDailyWage').value = s.settings.dailyWage;
+    document.getElementById('cfgMarkupPercent').value = s.settings.markupPercent;
+    document.getElementById('cfgMarkupBaht').value = s.settings.markupBaht;
+  }
+  const inv = await api('listInvoices', {});
+  if (inv.ok) document.getElementById('invoiceTableBody').innerHTML = inv.invoices.map(i => `<tr>
+    <td>${i.InvoiceID}</td><td>${i.BookingID||''}</td><td>${i.DebtorName}</td><td>${i.Amount}</td><td>${fmtDate(i.DueDate)}</td>
+    <td>${statusBadge(i.PaymentStatus)}</td>
+    <td><select class="form-select form-select-sm" onchange="setInvoiceStatus('${i.InvoiceID}',this.value)">
+      ${['ค้างชำระ','ชำระแล้ว'].map(s=>`<option ${i.PaymentStatus===s?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('');
+  const deb = await api('listDebtors', {});
+  if (deb.ok) document.getElementById('debtorTableBody').innerHTML = deb.debtors.map(d => `<tr>
+    <td>${d.Name}</td><td>${d.Contact||''}</td><td>${d.TotalDebt||0}</td><td>${statusBadge(d.Status)}</td></tr>`).join('');
+}
+async function saveFinanceSettings(){
+  await api('updateSettings', { dailyWage: document.getElementById('cfgDailyWage').value,
+    markupPercent: document.getElementById('cfgMarkupPercent').value, markupBaht: document.getElementById('cfgMarkupBaht').value });
+  alert('บันทึกการตั้งค่าเรียบร้อย');
+}
+document.getElementById('invoiceForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = Object.fromEntries(new FormData(e.target).entries());
+  const r = await api('createInvoice', body);
+  if (r.ok){ e.target.reset(); loadFinance(); } else alert(r.error);
+});
+document.getElementById('debtorForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = Object.fromEntries(new FormData(e.target).entries());
+  const r = await api('addDebtor', body);
+  if (r.ok){ e.target.reset(); loadFinance(); } else alert(r.error);
+});
+async function setInvoiceStatus(id, status){ await api('updateInvoiceStatus', { invoiceId: id, status }); }
+
+/* ============== SETTINGS TAB ============== */
+async function loadSettingsIntoForm(){
+  const s = await api('getSettings', {});
+  if (s.ok) document.getElementById('cfgAdminEmail').value = s.settings.adminEmail || '';
+}
+async function changePassword(){
+  const r = await api('changeAdminPassword', { oldPassword: document.getElementById('oldPass').value, newPassword: document.getElementById('newPass').value });
+  document.getElementById('changePassMsg').textContent = r.ok ? 'เปลี่ยนรหัสผ่านเรียบร้อย' : r.error;
+  document.getElementById('changePassMsg').className = 'small mt-2 ' + (r.ok ? 'text-success' : 'text-danger');
+}
+async function saveAdminEmail(){
+  await api('updateSettings', { adminEmail: document.getElementById('cfgAdminEmail').value });
+  alert('บันทึกเรียบร้อย');
+}
+async function requestAdminAccess(){
+  await api('requestAdminAccess', { name: document.getElementById('reqName').value, email: document.getElementById('reqEmail').value, reason: document.getElementById('reqReason').value });
+  alert('ส่งคำขอเรียบร้อยแล้ว');
+}
+</script>
+</body>
+</html>
